@@ -66,52 +66,65 @@
   <div class="container">
     <h1>Text-to-Speech Generator</h1>
     <textarea id="text-input" placeholder="Type your text here..." rows="5"></textarea>
-    <select id="voice-select"></select>
+    <select id="voice-type">
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
+    <select id="voice-speed">
+      <option value="fast">Fast</option>
+      <option value="medium">Medium</option>
+      <option value="slow">Slow</option>
+    </select>
     <button id="speak-btn">Speak</button>
     <button id="stop-btn">Stop</button>
   </div>
   <script>
-    // Get elements
     const textInput = document.getElementById('text-input');
-    const voiceSelect = document.getElementById('voice-select');
+    const voiceType = document.getElementById('voice-type');
+    const voiceSpeed = document.getElementById('voice-speed');
     const speakBtn = document.getElementById('speak-btn');
     const stopBtn = document.getElementById('stop-btn');
-
-    // Initialize SpeechSynthesis API
     const synth = window.speechSynthesis;
 
-    // Populate voice options
-    function populateVoices() {
+    function getSelectedVoice(type) {
       const voices = synth.getVoices();
-      voiceSelect.innerHTML = voices
-        .map((voice) => `<option value="${voice.name}">${voice.name} (${voice.lang})</option>`)
-        .join('');
+      if (type === 'male') {
+        return voices.find(voice => voice.name === 'Google US English') || voices.find(voice => voice.lang === 'en-US' && voice.gender === 'male');
+      } else {
+        return voices.find(voice => voice.name === 'Google UK English Female') || voices.find(voice => voice.lang === 'en-GB' && voice.gender === 'female');
+      }
     }
 
-    // Set up event listener for voices changed
-    synth.addEventListener('voiceschanged', populateVoices);
-
-    // Speak text
     function speakText() {
       const text = textInput.value;
       const utterance = new SpeechSynthesisUtterance(text);
-      const selectedVoice = voiceSelect.value;
+      const selectedType = voiceType.value;
+      const selectedSpeed = voiceSpeed.value;
 
-      utterance.voice = synth.getVoices().find((voice) => voice.name === selectedVoice);
+      utterance.voice = getSelectedVoice(selectedType);
+      
+      if (selectedSpeed === 'fast') {
+        utterance.rate = 1.15;
+      } else if (selectedSpeed === 'medium') {
+        utterance.rate = 1.0;
+      } else {
+        utterance.rate = 0.85;
+      }
+
       synth.speak(utterance);
     }
 
-    // Stop speaking
     function stopSpeaking() {
       synth.cancel();
     }
 
-    // Event listeners
     speakBtn.addEventListener('click', speakText);
     stopBtn.addEventListener('click', stopSpeaking);
 
     // Load voices on page load
-    populateVoices();
+    synth.onvoiceschanged = () => {
+      synth.getVoices();
+    };
   </script>
 </body>
 </html>
