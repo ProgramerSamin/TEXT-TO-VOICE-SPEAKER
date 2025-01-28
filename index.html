@@ -66,61 +66,65 @@
   <div class="container">
     <h1>Text-to-Speech Generator</h1>
     <textarea id="text-input" placeholder="Type your text here..." rows="5"></textarea>
+    <select id="voice-type">
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
     <select id="voice-speed">
       <option value="fast">Fast</option>
       <option value="medium">Medium</option>
       <option value="slow">Slow</option>
     </select>
     <button id="speak-btn">Speak</button>
-    <button id="download-btn">Download</button>
+    <button id="stop-btn">Stop</button>
   </div>
   <script>
     const textInput = document.getElementById('text-input');
+    const voiceType = document.getElementById('voice-type');
     const voiceSpeed = document.getElementById('voice-speed');
     const speakBtn = document.getElementById('speak-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    
-    speakBtn.addEventListener('click', () => {
-      const text = textInput.value;
-      const speed = voiceSpeed.value;
-      const data = { text, speed };
-      
-      fetch('/speak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(data => {
-        const audio = new Audio(data.url);
-        audio.play();
-      });
-    });
+    const stopBtn = document.getElementById('stop-btn');
+    const synth = window.speechSynthesis;
 
-    downloadBtn.addEventListener('click', () => {
+    function getSelectedVoice(type) {
+      const voices = synth.getVoices();
+      if (type === 'male') {
+        return voices.find(voice => voice.name === 'Google US English') || voices.find(voice => voice.lang === 'en-US' && voice.gender === 'male');
+      } else {
+        return voices.find(voice => voice.name === 'Google UK English Female') || voices.find(voice => voice.lang === 'en-GB' && voice.gender === 'female');
+      }
+    }
+
+    function speakText() {
       const text = textInput.value;
-      const speed = voiceSpeed.value;
-      const data = { text, speed };
+      const utterance = new SpeechSynthesisUtterance(text);
+      const selectedType = voiceType.value;
+      const selectedSpeed = voiceSpeed.value;
+
+      utterance.voice = getSelectedVoice(selectedType);
       
-      fetch('/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(data => {
-        const a = document.createElement('a');
-        a.href = data.url;
-        a.download = 'output.mp3';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
-    });
+      if (selectedSpeed === 'fast') {
+        utterance.rate = 1.15;
+      } else if (selectedSpeed === 'medium') {
+        utterance.rate = 1.0;
+      } else {
+        utterance.rate = 0.85;
+      }
+
+      synth.speak(utterance);
+    }
+
+    function stopSpeaking() {
+      synth.cancel();
+    }
+
+    speakBtn.addEventListener('click', speakText);
+    stopBtn.addEventListener('click', stopSpeaking);
+
+    // Load voices on page load
+    synth.onvoiceschanged = () => {
+      synth.getVoices();
+    };
   </script>
 </body>
 </html>
